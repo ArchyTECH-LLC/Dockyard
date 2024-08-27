@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Offloader.Runner": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+@Offloader.TaskMaster_HostAddress = http://localhost:5054
+
+GET {{Offloader.TaskMaster_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

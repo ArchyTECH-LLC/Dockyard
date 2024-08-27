@@ -1,0 +1,139 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using ApiSdk
+@using ApiSdk.Models
+@using Microsoft.Kiota.Abstractions.Authentication
+@using Microsoft.Kiota.Http.HttpClientLibrary
+
+<PageTitle>Home</PageTitle>
+
+
+<h2>Containers</h2>
+<div class="row">
+    <div class="col-6">
+        <h3> Images</h3>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Name</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var imagesListResponse in Images)
+            {
+                <tr>
+                    <td>@(imagesListResponse.RepoTags.FirstOrDefault() ?? imagesListResponse.Id)</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-6">
+        <h3>Instances</h3>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Image</th>
+                <th>State</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var instance in ContainerInstances)
+            {
+                <tr>
+                        <td>@(instance.Names?.FirstOrDefault() ?? "<none>")</td>
+                        <td>@(instance.Image)</td>
+                        <td>@(instance.State)</td>
+                        <td>@(instance.Status)</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<h3>Scheduled Jobs</h3>
+<button @onclick="Add">Add Job</button>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Type</th>
+            <th>CRON Schedule</th>
+            <th>Next Execution</th>
+            <th>Last Execution</th>
+            <th>Last Job State</th>
+            <th>Error</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var job in Jobs)
+        {
+            <tr>
+                <td>@job.Id</td>
+                <td>@job.Type</td>
+                <td>@job.Cron</td>
+                <td>@job.NextExecution</td>
+                <td>@job.LastExecution</td>
+                <td>@job.LastJobState</td>
+                <td>@job.Error</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@inject OffloaderClient OffloaderClient
+@code
+{
+    public List<ScheduledJob> Jobs { get; set; } = new();
+    public List<ImagesListResponse> Images { get; set; } = new();
+    public List<ContainerListResponse> ContainerInstances { get; set; } = new();
+    public Timer Timer { get; set; }
+
+    // public OffloaderClient OffloaderClient { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+
+        // var httpClient = new HttpClient();
+        // httpClient.BaseAddress = new Uri("https://apiservice");
+        // OffloaderClient = new OffloaderClient(new HttpClientRequestAdapter(
+        //     new AnonymousAuthenticationProvider(),
+        //     httpClient: httpClient
+        //     ));
+
+
+         RefreshContinuous();
+    }
+
+
+
+    private async Task RefreshContinuous()
+    {
+        await Refresh();
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(TimeSpan.FromSeconds(3));
+        await RefreshContinuous();
+
+
+    }
+
+    private async Task Refresh()
+    {
+
+        Images = await OffloaderClient.Container.Image.List.GetAsync();
+        ContainerInstances = await OffloaderClient.Container.Instances.List.GetAsync(); 
+        Jobs = await OffloaderClient.Jobs.All.GetAsync() ?? new();
+    }
+
+    private async Task Add()
+    {
+        await OffloaderClient.Jobs.Add[$"Job {Random.Shared.Next(1, 100)}"].GetAsync();
+
+        await Refresh();
+    }
+}
